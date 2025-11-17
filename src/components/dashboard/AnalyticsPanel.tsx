@@ -6,12 +6,12 @@ import { db } from "@/lib/firebase";
 
 const AnalyticsPanel = () => {
   const [donationData, setDonationData] = useState([
-    { name: 'Jan', value: 4000 },
-    { name: 'Feb', value: 3000 },
-    { name: 'Mar', value: 5000 },
-    { name: 'Apr', value: 2780 },
-    { name: 'May', value: 1890 },
-    { name: 'Jun', value: 2390 },
+    { name: 'Jan', value: 200 },
+    { name: 'Feb', value: 700 },
+    { name: 'Mar', value: 400 },
+    { name: 'Apr', value: 1550 },
+    { name: 'May', value: 890 },
+    { name: 'Jun', value: 100 },
   ]);
   
   const [transactionData, setTransactionData] = useState([
@@ -25,8 +25,8 @@ const AnalyticsPanel = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   // Summary statistics
-  const totalDonations = "₱1,350,000";
-  const totalDonors = 358;
+  const totalDonations = "₱13,380";
+  const totalDonors = 12;
   const avgDonationSize = "₱3,770";
   const donationGrowth = "+15%";
 

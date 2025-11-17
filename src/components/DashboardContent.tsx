@@ -12,7 +12,7 @@ import AnalyticsPanel from "./dashboard/AnalyticsPanel";
 import SettingsPanel from "./dashboard/SettingsPanel";
 import ReportsPanel from "./dashboard/ReportsPanel";
 import NotificationsPanel from "./dashboard/NotificationsPanel";
-
+import Complaints from "@/pages/complaints";
 interface DashboardContentProps {
   activeTab: string;
 }
@@ -38,6 +38,8 @@ const DashboardContent = ({ activeTab }: DashboardContentProps) => {
         return <MediaPanel />;
       case "settings":
         return <SettingsPanel />;
+      case "complaints":
+        return <Complaints />;
       default:
         return (
           <Card className="p-6 bg-white shadow-md border-2 border-[#0da54b]/20">

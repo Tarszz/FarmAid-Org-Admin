@@ -60,14 +60,7 @@ const TransactionsPanel = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Transactions</h2>
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <BellDot className="w-6 h-6 text-gray-600" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#4ecdc4] text-white text-xs flex items-center justify-center rounded-full">3</span>
-          </div>
-          <div className="relative">
-            <MessageCircle className="w-6 h-6 text-gray-600" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#4ecdc4] text-white text-xs flex items-center justify-center rounded-full">2</span>
-          </div>
+          
         </div>
       </div>
       <p className="text-gray-600">View and manage all transactions</p>

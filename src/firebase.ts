@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database"; // Add this if you're using Realtime Database
 
@@ -22,3 +23,4 @@ const database = getDatabase(app); // Optional: export if you use Realtime DB
 
 // ✅ Export needed variables
 export { app, analytics, database };
+export const db = getFirestore(app);

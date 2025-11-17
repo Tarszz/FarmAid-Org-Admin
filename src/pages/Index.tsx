@@ -1,10 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from "@/components/ui/sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import DashboardContent from "@/components/DashboardContent";
-import { Home, BarChart, ShoppingCart, Gift, Settings, LogOut, Bell } from "lucide-react";
+import { Home, BarChart, ShoppingCart, Gift, Settings, LogOut, Bell, Mail } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { fetchUnreadNotifications } from "@/lib/firebaseServices";
@@ -61,6 +69,7 @@ const Index = () => {
       { title: "Transactions", icon: ShoppingCart, id: "transactions" },
       { title: "Donations", icon: Gift, id: "donations" },
       { title: "Notifications", icon: Bell, id: "notifications", badge: notificationsCount.toString() },
+      { title: "Messages", icon: Mail, id: "complaints" },
     ]},
     { section: "SYSTEM", items: [
       { title: "Settings", icon: Settings, id: "settings" },
@@ -71,11 +80,12 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-100 text-gray-800">
+        {/* Sidebar */}
         <Sidebar className="bg-green-700 text-white border-none w-72">
           <SidebarContent>
             <div className="p-4">
               <div className="text-2xl font-bold text-white">FarmAid</div>
-              <div className="text-sm text-white/70 mt-1">Metro Food Bank</div>
+              <div className="text-sm text-white/70 mt-1">Central Kitchen Valenzuela</div>
             </div>
             {menuItems.map((section) => (
               <SidebarGroup key={section.section}>
@@ -85,8 +95,14 @@ const Index = () => {
                     {section.items.map((item) => (
                       <SidebarMenuItem key={item.id}>
                         <SidebarMenuButton
-                          className={`w-full text-gray-100 text-lg py-3 ${activeTab === item.id ? 'bg-green-500 text-white' : 'hover:bg-green-600'}`}
-                          onClick={() => item.id === "logout" ? handleLogout() : setActiveTab(item.id)}
+                          className={`w-full text-gray-100 text-lg py-3 ${
+                            activeTab === item.id
+                              ? "bg-green-500 text-white"
+                              : "hover:bg-green-600"
+                          }`}
+                          onClick={() =>
+                            item.id === "logout" ? handleLogout() : setActiveTab(item.id)
+                          }
                         >
                           <item.icon className="mr-3" size={22} />
                           <span className="font-medium">{item.title}</span>
@@ -104,10 +120,16 @@ const Index = () => {
             ))}
           </SidebarContent>
         </Sidebar>
+  
+        {/* 5px Transparent Gap */}
+        <div style={{ width: "20px", backgroundColor: "transparent" }}></div>
+  
+        {/* Main Content */}
         <DashboardContent activeTab={activeTab} />
       </div>
     </SidebarProvider>
   );
+  
 };
 
 export default Index;
