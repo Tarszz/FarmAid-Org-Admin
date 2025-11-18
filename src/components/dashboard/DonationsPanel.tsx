@@ -1,54 +1,131 @@
-
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import DonationConfirmation from "../donations/DonationConfirmation";
+import React, { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import DonationConfirmation from '../donations/DonationConfirmation';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  getDoc,
+  Timestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Donation {
   id: string;
-  donor: string;
+  donorName: string;
+  buyerId?: string; // user id of the donor (used for chats)
   type: string;
-  quantity: string;
-  date: string;
+  quantity: number;
+  unit: string;
+  date: Timestamp | null;
   status: string;
 }
 
-const DonationsPanel = () => {
-  // Sample data for donations with updated categories
-  const [donations, setDonations] = useState([
-    { id: "DON-001", donor: "Metro Food Bank", type: "Grains", quantity: "500kg", date: "Apr 22, 2025", status: "Delivered" },
-    { id: "DON-002", donor: "Green Agriculture Co.", type: "Rootcrops", quantity: "200kg", date: "Apr 20, 2025", status: "In Transit" },
-    { id: "DON-003", donor: "Community Helpers", type: "Vegetables", quantity: "300kg", date: "Apr 18, 2025", status: "Processing" },
-    { id: "DON-004", donor: "Tech For Farms", type: "Fruits", quantity: "150kg", date: "Apr 15, 2025", status: "Delivered" },
-    { id: "DON-005", donor: "Metro Food Bank", type: "Spices", quantity: "50kg", date: "Apr 12, 2025", status: "Delivered" },
-  ]);
+const DonationsPanel: React.FC = () => {
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [confirmingDonationId, setConfirmingDonationId] = useState<string | null>(null);
+  const [confirmingBuyerId, setConfirmingBuyerId] = useState<string | undefined>(undefined);
+  const [confirmingDonorName, setConfirmingDonorName] = useState<string>('');
 
-  const handleConfirmReceipt = (donationId: string) => {
-    setDonations(prev => prev.map(donation => 
-      donation.id === donationId 
-        ? { ...donation, status: "Confirmed" }
-        : donation
-    ));
+  // REAL-TIME FETCHING of donation transactions
+  useEffect(() => {
+    const q = query(collection(db, 'transactions'), where('transactionType', '==', 'donation'));
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const donationsData: Donation[] = [];
+
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const transactionId = docSnap.id;
+
+        // Fetch donor info (buyerId -> users collection)
+        let donorName = 'Unknown Donor';
+        let buyerId: string | undefined = undefined;
+        if (data.buyerId) {
+          buyerId = data.buyerId;
+          const userDoc = await getDoc(doc(db, 'users', data.buyerId));
+          if (userDoc.exists()) {
+            const u = userDoc.data();
+            donorName = `${u.firstname || ''} ${u.lastname || ''}`.trim();
+          }
+        }
+
+        donationsData.push({
+          id: transactionId,
+          donorName,
+          buyerId,
+          type: data.item || '',
+          quantity: data.quantity || 0,
+          unit: data.unit || '',
+          date: data.timestamp || null,
+          status: (data.status as string) || 'Pending', // Fallback to Pending
+        });
+      }
+
+      setDonations(donationsData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // When the confirm modal triggers, this will be called by DonationConfirmation after successful send
+  const handleConfirmReceiptCompleted = async (donationId: string) => {
+    // Update UI state: modal will close from child by calling onClose
+    // We update the transaction status here (for optimistic UI, but DonationConfirmation also updates)
+    try {
+      await updateDoc(doc(db, 'transactions', donationId), {
+        status: 'Completed',
+      });
+    } catch (error) {
+      console.error('Error updating transaction status after confirm:', error);
+    }
   };
 
+  // When user clicks confirm button, open modal with donation info
+  const openConfirmModal = (donationId: string, buyerId: string | undefined, donorName: string) => {
+    setConfirmingDonationId(donationId);
+    setConfirmingBuyerId(buyerId);
+    setConfirmingDonorName(donorName);
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmingDonationId(null);
+    setConfirmingBuyerId(undefined);
+    setConfirmingDonorName('');
+  };
+
+  // status color helper
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Delivered":
-        return "text-green-600";
-      case "Confirmed":
-        return "text-blue-600";
-      case "In Transit":
-        return "text-yellow-600";
-      case "Processing":
-        return "text-orange-600";
+      case 'Delivered':
+        return 'text-green-600';
+      case 'Pending':
+        return 'text-yellow-600';
+      case 'Processing':
+        return 'text-orange-600';
+      case 'Completed':
+        return 'text-gray-500';
+      case 'Confirmed':
+        return 'text-blue-600';
       default:
-        return "text-gray-600";
+        return 'text-gray-600';
     }
+  };
+
+  const formatDate = (timestamp: Timestamp | null) => {
+    if (timestamp?.toDate) return timestamp.toDate().toLocaleString();
+    return 'N/A';
   };
 
   return (
     <Card className="p-6 bg-white shadow-md border-2 border-[#0da54b]/20">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Donations Management</h2>
+
       <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead>
@@ -61,33 +138,64 @@ const DonationsPanel = () => {
               <th className="py-3 text-left text-gray-600">Actions</th>
             </tr>
           </thead>
+
           <tbody>
-            {donations.map((donation) => (
-              <tr key={donation.id} className="border-b border-gray-100">
-                <td className="py-3 text-gray-800">{donation.donor}</td>
-                <td className="py-3 text-gray-800">{donation.type}</td>
-                <td className="py-3 text-gray-800">{donation.quantity}</td>
-                <td className="py-3 text-gray-800">{donation.date}</td>
-                <td className={`py-3 font-medium ${getStatusColor(donation.status)}`}>
-                  {donation.status}
-                </td>
-                <td className="py-3">
-                  {donation.status === "Delivered" && (
-                    <DonationConfirmation
-                      donationId={donation.id}
-                      donorName={donation.donor}
-                      onConfirm={() => handleConfirmReceipt(donation.id)}
-                    />
-                  )}
-                  {donation.status === "Confirmed" && (
-                    <span className="text-sm text-blue-600 font-medium">✓ Confirmed</span>
-                  )}
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-gray-500">
+                  Loading donations...
                 </td>
               </tr>
-            ))}
+            ) : donations.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-gray-500">
+                  No donations found.
+                </td>
+              </tr>
+            ) : (
+              donations.map((donation) => (
+                <tr key={donation.id} className="border-b border-gray-100">
+                  <td className="py-3 text-gray-800">{donation.donorName}</td>
+                  <td className="py-3 text-gray-800">{donation.type}</td>
+                  <td className="py-3 text-gray-800">{donation.quantity} {donation.unit}</td>
+                  <td className="py-3 text-gray-800">{formatDate(donation.date)}</td>
+
+                  <td className={`py-3 font-medium ${getStatusColor(donation.status)}`}>
+                    {donation.status}
+                  </td>
+
+                  <td className="py-3">
+                    {donation.status === 'Pending' && (
+                      <DonationConfirmation
+                        donationId={donation.id}
+                        donorName={donation.donorName}
+                        buyerId={donation.buyerId}
+                        onClose={closeConfirmModal}
+                        onCompleted={() => handleConfirmReceiptCompleted(donation.id)}
+                        openModalTrigger={() => openConfirmModal(donation.id, donation.buyerId, donation.donorName)}
+                        // We don't actually render the modal here; clicking a button will open it. For simplicity we'll render the modal directly:
+                      />
+                    )}
+
+                    {donation.status === 'Completed' && (
+                      <span className="text-sm text-gray-500 font-medium">No action required</span>
+                    )}
+
+                    {/* fallback */}
+                    {!['Pending', 'Completed'].includes(donation.status) && (
+                      <span className="text-sm text-gray-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Render a hidden modal trigger: DonationConfirmation component internally shows modal when used.
+          Note: DonationConfirmation shows its own button by default for the confirm action.
+      */}
     </Card>
   );
 };
